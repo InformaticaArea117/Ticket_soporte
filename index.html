@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ticket de Soporte — Area117</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
 <style>
 :root {
   --primary: #5b52f0;
@@ -184,6 +185,25 @@ textarea { resize: vertical; min-height: 115px; line-height: 1.6; }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+.user-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 50px; padding: 6px 14px 6px 6px;
+  margin-bottom: 16px; font-size: 13px; color: var(--text-light);
+  width: fit-content;
+}
+.user-avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, #5b52f0, #8b5cf6);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+input.auto-filled {
+  background: rgba(91,82,240,0.04);
+  border-color: rgba(91,82,240,0.25);
+  color: var(--text-light);
+}
+input.auto-filled:focus { color: var(--text); border-color: var(--primary); }
 @media (max-width: 540px) {
   .row.two { grid-template-columns: 1fr; }
   .card-footer { flex-direction: column; align-items: stretch; }
@@ -193,6 +213,10 @@ textarea { resize: vertical; min-height: 115px; line-height: 1.6; }
 </head>
 <body>
 <div class="container">
+  <div class="user-bar" id="userBar" style="display:none">
+    <div class="user-avatar" id="userAvatar">?</div>
+    <span>Conectado como <strong id="userDisplayName">...</strong></span>
+  </div>
 
   <div class="header">
     <div class="header-icon">
@@ -215,10 +239,12 @@ textarea { resize: vertical; min-height: 115px; line-height: 1.6; }
           <div class="field">
             <label>Nombre completo<span class="req">*</span></label>
             <input type="text" id="fNombre" placeholder="Tu nombre completo">
+            <span id="autoTagNombre" style="display:none;font-size:10px;color:#5b52f0;margin-top:2px">✓ Detectado automáticamente desde Teams</span>
           </div>
           <div class="field">
             <label>Correo electrónico<span class="req">*</span></label>
             <input type="email" id="fEmail" placeholder="tu@area117.es">
+            <span id="autoTagEmail" style="display:none;font-size:10px;color:#5b52f0;margin-top:2px">✓ Detectado automáticamente desde Teams</span>
           </div>
         </div>
         <div class="field" style="margin-top:14px">
@@ -301,6 +327,40 @@ textarea { resize: vertical; min-height: 115px; line-height: 1.6; }
 // URL DEL WEBHOOK DE MAKE.COM
 // ─────────────────────────────────────────────────────────────────────────────
 const MAKE_URL = 'https://hook.eu1.make.com/idjiufsz01slslle8funq333xar2iqow';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTORELLENAR DESDE TEAMS SDK
+// ─────────────────────────────────────────────────────────────────────────────
+(function initTeams() {
+  try {
+    microsoftTeams.app.initialize().then(() => {
+      microsoftTeams.app.getContext().then(ctx => {
+        const user = ctx.user;
+        if (user) {
+          const nameEl  = document.getElementById('fNombre');
+          const emailEl = document.getElementById('fEmail');
+          if (user.displayName && !nameEl.value) {
+            nameEl.value = user.displayName;
+            nameEl.classList.add('auto-filled');
+            document.getElementById('autoTagNombre').style.display = 'block';
+          }
+          if (user.loginHint && !emailEl.value) {
+            emailEl.value = user.loginHint;
+            emailEl.classList.add('auto-filled');
+            document.getElementById('autoTagEmail').style.display = 'block';
+          }
+          // Mostrar badge de usuario
+          const bar = document.getElementById('userBar');
+          const name = user.displayName || user.loginHint || '';
+          document.getElementById('userDisplayName').textContent = name;
+          const initials = name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+          document.getElementById('userAvatar').textContent = initials || '?';
+          bar.style.display = 'flex';
+        }
+      }).catch(() => {}); // Fuera de Teams, no hace nada
+    }).catch(() => {});
+  } catch(e) {}
+})();
 
 // ─────────────────────────────────────────────────────────────────────────────
 let urgencia = '';
