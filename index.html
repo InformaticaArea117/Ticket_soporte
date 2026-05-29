@@ -413,6 +413,22 @@ async function enviar() {
   setLoading(true);
 
   try {
+    // Convertir archivos a base64
+    async function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload  = () => resolve({
+          nombre:   file.name,
+          tipo:     file.type || 'application/octet-stream',
+          tamanio:  file.size,
+          base64:   reader.result.split(',')[1]
+        });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    const archivosBase64 = await Promise.all(archivos.map(fileToBase64));
+
     const res = await fetch(MAKE_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -424,7 +440,8 @@ async function enviar() {
         descripcion: desc,
         urgencia,
         archivos:    archivos.length ? archivos.map(f => f.name).join(', ') : '(sin adjuntos)',
-        fecha:       new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' })
+        fecha:       new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' }),
+        adjuntos:    archivosBase64
       })
     });
 
