@@ -334,6 +334,21 @@ const MAKE_URL = 'https://hook.eu1.make.com/idjiufsz01slslle8funq333xar2iqow';
 (function initTeams() {
   try {
     microsoftTeams.app.initialize().then(() => {
+
+      // Si estamos en modo configuracion de pestana, habilitar el boton Guardar
+      try {
+        microsoftTeams.pages.config.registerOnSaveHandler((saveEvent) => {
+          microsoftTeams.pages.config.setConfig({
+            suggestedDisplayName: 'Abrir ticket',
+            entityId: 'ticketForm',
+            contentUrl: 'https://informaticaarea117.github.io/Ticket_soporte/',
+            websiteUrl: 'https://informaticaarea117.github.io/Ticket_soporte/'
+          });
+          saveEvent.notifySuccess();
+        });
+        microsoftTeams.pages.config.setValidityState(true);
+      } catch(e) {}
+
       microsoftTeams.app.getContext().then(ctx => {
         const user = ctx.user;
         if (user) {
