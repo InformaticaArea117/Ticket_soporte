@@ -213,7 +213,7 @@ input.auto-filled:focus { color: var(--text); border-color: var(--primary); }
 </head>
 <body>
 <div class="container">
-  <div class="user-bar" id="userBar" style="display:none">
+  <div class="user-bar" id="userBar" style="display:none;visibility:hidden;height:0;overflow:hidden;margin:0;padding:0">
     <div class="user-avatar" id="userAvatar">?</div>
     <span>Conectado como <strong id="userDisplayName">...</strong></span>
   </div>
@@ -351,50 +351,39 @@ const MAKE_URL = 'https://hook.eu1.make.com/idjiufsz01slslle8funq333xar2iqow';
 
       microsoftTeams.app.getContext().then(ctx => {
         const user = ctx.user;
-        if (user) {
-          const nameEl  = document.getElementById('fNombre');
-          const emailEl = document.getElementById('fEmail');
-          // Email — usar loginHint o userPrincipalName
-          const emailVal = user.loginHint || user.userPrincipalName || '';
-          if (emailVal && !emailEl.value) {
-            emailEl.value = emailVal;
-            emailEl.classList.add('auto-filled');
-            document.getElementById('autoTagEmail').style.display = 'block';
-          }
+        const nameEl  = document.getElementById('fNombre');
+        const emailEl = document.getElementById('fEmail');
 
-          // Nombre — intentar varias fuentes
-          const nameVal = user.displayName || user.name || '';
-          if (nameVal && !nameEl.value) {
-            nameEl.value = nameVal;
-            nameEl.classList.add('auto-filled');
-            document.getElementById('autoTagNombre').style.display = 'block';
-          } else if (!nameVal && emailVal) {
-            // Si no hay displayName, intentar obtenerlo via Graph
-            microsoftTeams.authentication.getAuthToken().then(function(token) {
-              fetch('https://graph.microsoft.com/v1.0/me?$select=displayName', {
-                headers: { 'Authorization': 'Bearer ' + token }
-              }).then(r => r.json()).then(data => {
-                if (data.displayName && !nameEl.value) {
-                  nameEl.value = data.displayName;
-                  nameEl.classList.add('auto-filled');
-                  document.getElementById('autoTagNombre').style.display = 'block';
-                  document.getElementById('userDisplayName').textContent = data.displayName;
-                  const ini = data.displayName.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-                  document.getElementById('userAvatar').textContent = ini || '?';
-                }
-              }).catch(() => {});
-            }).catch(() => {});
-          }
-
-          // Badge de usuario
-          const bar = document.getElementById('userBar');
-          const displayName = nameVal || emailVal || '';
-          document.getElementById('userDisplayName').textContent = displayName;
-          const initials = displayName.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
-          document.getElementById('userAvatar').textContent = initials || '?';
-          bar.style.display = 'flex';
+        // Email desde contexto
+        const emailVal = (user && (user.loginHint || user.userPrincipalName)) || '';
+        if (emailVal && !emailEl.value) {
+          emailEl.value = emailVal;
+          emailEl.classList.add('auto-filled');
+          document.getElementById('autoTagEmail').style.display = 'block';
         }
-      }).catch(() => {}); // Fuera de Teams, no hace nada
+
+        // Nombre y datos completos via Graph API
+        microsoftTeams.authentication.getAuthToken().then(function(token) {
+          fetch('https://graph.microsoft.com/v1.0/me?$select=displayName,mail,userPrincipalName', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          }).then(r => r.json()).then(data => {
+            // Nombre
+            if (data.displayName && !nameEl.value) {
+              nameEl.value = data.displayName;
+              nameEl.classList.add('auto-filled');
+              document.getElementById('autoTagNombre').style.display = 'block';
+            }
+            // Email (por si no vino del contexto)
+            const graphEmail = data.mail || data.userPrincipalName || '';
+            if (graphEmail && !emailEl.value) {
+              emailEl.value = graphEmail;
+              emailEl.classList.add('auto-filled');
+              document.getElementById('autoTagEmail').style.display = 'block';
+            }
+          }).catch(() => {});
+        }).catch(() => {});
+
+      }).catch(() => {});
     }).catch(() => {});
   } catch(e) {}
 })();
