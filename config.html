@@ -4,19 +4,38 @@
 <meta charset="UTF-8">
 <script src="https://res.cdn.office.net/teams-js/2.22.0/js/MicrosoftTeams.min.js"></script>
 </head>
-<body>
+<body style="font-family:Arial,sans-serif;text-align:center;padding:40px;background:#f9fafb">
+  <div style="font-size:40px">🎫</div>
+  <h2 style="color:#111827;margin:16px 0 8px">Soporte IT</h2>
+  <p style="color:#6b7280;font-size:14px">Pulsa <strong>Guardar</strong> para añadir el formulario al canal</p>
 <script>
-microsoftTeams.app.initialize().then(() => {
-  microsoftTeams.pages.config.registerOnSaveHandler((saveEvent) => {
-    microsoftTeams.pages.config.setConfig({
-      suggestedDisplayName: "Abrir ticket",
-      entityId: "ticketForm",
-      contentUrl: "https://informaticaarea117.github.io/Ticket_soporte/",
-      websiteUrl: "https://informaticaarea117.github.io/Ticket_soporte/"
-    });
-    saveEvent.notifySuccess();
-  });
+var CONTENT_URL = 'https://informaticaarea117.github.io/Ticket_soporte/';
+
+function activate() {
   microsoftTeams.pages.config.setValidityState(true);
+  microsoftTeams.pages.config.registerOnSaveHandler(function(evt) {
+    microsoftTeams.pages.config.setConfig({
+      entityId: 'ticketForm',
+      contentUrl: CONTENT_URL,
+      websiteUrl: CONTENT_URL,
+      suggestedDisplayName: 'Abrir ticket'
+    });
+    evt.notifySuccess();
+  });
+}
+
+microsoftTeams.app.initialize().then(activate).catch(function() {
+  // Reintentar cada 300ms hasta 10 veces
+  var attempts = 0;
+  var interval = setInterval(function() {
+    attempts++;
+    try {
+      activate();
+      clearInterval(interval);
+    } catch(e) {
+      if (attempts >= 10) clearInterval(interval);
+    }
+  }, 300);
 });
 </script>
 </body>
