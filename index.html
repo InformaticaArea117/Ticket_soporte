@@ -90,6 +90,22 @@ input[type=text], input[type=email], input[type=tel], textarea {
   background: var(--surface); color: var(--text);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
+select {
+  width: 100%; padding: 10px 13px;
+  font-size: 14px; font-family: inherit;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  background: var(--surface); color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  cursor: pointer;
+}
+select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(91,82,240,0.1);
+}
 input:focus, textarea:focus {
   outline: none; border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(91,82,240,0.1);
@@ -267,8 +283,34 @@ input.auto-filled:focus { color: var(--text); border-color: var(--primary); }
           </div>
         </div>
         <div class="field" style="margin-top:14px">
-          <label>Teléfono</label>
+          <label>Teléfono <span class="req">*</span></label>
           <input type="tel" id="fTel" placeholder="612 345 678">
+        </div>
+        <div class="field" style="margin-top:14px">
+          <label>Estación de Servicio <span class="req">*</span></label>
+          <select id="fEstacion">
+            <option value="">-- Selecciona una estación --</option>
+            <option value="Alfajarin">Alfajarin</option>
+            <option value="Vallecas">Vallecas</option>
+            <option value="Alcubilla">Alcubilla</option>
+            <option value="Torremocha">Torremocha</option>
+            <option value="Arcos de Jalón">Arcos de Jalón</option>
+            <option value="Ucles">Ucles</option>
+            <option value="Benameji">Benameji</option>
+            <option value="Ganesha (Vallecas)">Ganesha (Vallecas)</option>
+            <option value="Torrejón">Torrejón</option>
+            <option value="Humilladero">Humilladero</option>
+            <option value="Gasocentro Madrid">Gasocentro Madrid</option>
+            <option value="Gasocentro Levante">Gasocentro Levante</option>
+            <option value="Alberic">Alberic</option>
+            <option value="Chiva">Chiva</option>
+            <option value="Manises">Manises</option>
+            <option value="Pista de Silla">Pista de Silla</option>
+            <option value="Catarroja">Catarroja</option>
+            <option value="Ribarroja">Ribarroja</option>
+            <option value="Real de Gandia">Real de Gandia</option>
+            <option value="Valdemoro">Valdemoro</option>
+          </select>
         </div>
       </div>
 
@@ -461,14 +503,17 @@ function renderFiles() {
 }
 
 async function enviar() {
-  const nombre = document.getElementById('fNombre').value.trim();
-  const email  = document.getElementById('fEmail').value.trim();
-  const tel    = document.getElementById('fTel').value.trim();
-  const asunto = document.getElementById('fAsunto').value.trim();
-  const desc   = document.getElementById('fDesc').value.trim();
+  const nombre   = document.getElementById('fNombre').value.trim();
+  const email    = document.getElementById('fEmail').value.trim();
+  const tel      = document.getElementById('fTel').value.trim();
+  const estacion = document.getElementById('fEstacion').value.trim();
+  const asunto   = document.getElementById('fAsunto').value.trim();
+  const desc     = document.getElementById('fDesc').value.trim();
 
   if (!nombre)   { toast('El nombre es obligatorio', 'error'); return; }
   if (!email)    { toast('El correo es obligatorio', 'error'); return; }
+  if (!tel)      { toast('El teléfono es obligatorio', 'error'); return; }
+  if (!estacion) { toast('Selecciona una estación de servicio', 'error'); return; }
   if (!asunto)   { toast('El asunto es obligatorio', 'error'); return; }
   if (!desc)     { toast('La descripción es obligatoria', 'error'); return; }
   if (!urgencia) { toast('Selecciona la urgencia', 'error'); return; }
@@ -498,7 +543,8 @@ async function enviar() {
       body: JSON.stringify({
         nombre,
         email,
-        telefono:    tel || '(no indicado)',
+        telefono:    tel,
+        estacion:    estacion,
         asunto,
         descripcion: desc,
         urgencia,
@@ -510,8 +556,14 @@ async function enviar() {
 
     if (!res.ok) throw new Error('Error ' + res.status);
 
-    // Número de ticket basado en timestamp para que sea único
-    const num = Math.floor(Date.now() / 1000) % 90000 + 10000;
+    // Intentar leer el número de ticket real desde la respuesta de Make
+    let num = '—';
+    try {
+      const data = await res.json();
+      if (data && data.ticketId) {
+        num = data.ticketId;
+      }
+    } catch(e) {}
     document.getElementById('ticketBadge').textContent = 'Ticket #' + num;
     showOk();
 
@@ -536,6 +588,7 @@ function resetForm() {
   document.getElementById('formWrap').style.display = '';
   document.getElementById('okScreen').style.display = 'none';
   ['fNombre','fEmail','fTel','fAsunto','fDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fEstacion').value = '';
   urgencia = ''; archivos = []; renderFiles();
   document.querySelectorAll('.u-btn').forEach(b => b.className = 'u-btn');
   setLoading(false);
